@@ -24,6 +24,7 @@ class CatList(Resource):
 @api.route('/<id>')
 @api.param('id', 'The user identifier')
 @api.response(404, 'User not found')
+#@api.doc(security='apikey'), in case you only have some endpoints that are protected.
 class User(Resource):
     @api.doc('get_user')
     @api.marshal_with(user)
