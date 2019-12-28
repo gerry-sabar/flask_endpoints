@@ -13,6 +13,7 @@ from flask_jwt_extended import (
 app = Flask(__name__)
 
 # Setup the Flask-JWT-Extended extension
+app.config['RESTPLUS_MASK_SWAGGER'] = False # remove default X-Fields field in swagger
 app.config['JWT_SECRET_KEY'] = 'super-secret'  # Change this!
 jwt = JWTManager(app)
 

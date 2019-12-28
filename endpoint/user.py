@@ -23,7 +23,7 @@ class UserList(Resource):
     @api.doc('list_users')
     @api.marshal_list_with(user)
     def get(self):
-        '''List all users'''
+        '''description goes here...'''
         return USERS
 
 @api.route('/token/<id>')
@@ -42,6 +42,7 @@ class UserToken(Resource):
 @api.route('/refresh/<refresh_token>')
 @api.param('refresh_token', 'Valid refresh token')
 @api.response(404, 'Invalid token')
+@api.doc(params={'id': 'example of additional optional parameter'})
 class RefreshToken(Resource):
     @jwt_refresh_token_required
     def get(self, refresh_token):
