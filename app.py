@@ -1,6 +1,5 @@
 from flask import Flask
 from werkzeug.contrib.fixers import ProxyFix
-from flask_seeder import FlaskSeeder
 from endpoint import api
 from flask_sqlalchemy import SQLAlchemy
 
@@ -13,10 +12,6 @@ app = Flask(__name__)
 
 db = SQLAlchemy()
 db.init_app(app)
-
-#seeder
-seeder = FlaskSeeder()
-seeder.init_app(app, db)
 
 # Setup the Flask-JWT-Extended extension
 app.config['RESTPLUS_MASK_SWAGGER'] = False # remove default X-Fields field in swagger
