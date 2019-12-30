@@ -3,9 +3,6 @@ from flask_restplus import Api
 from .user import api as user_api
 from .currency import api as currency_api
 
-from flask_sqlalchemy import SQLAlchemy
-db = SQLAlchemy()
-
 #add api key
 authorizations = {
     'apikey' : {

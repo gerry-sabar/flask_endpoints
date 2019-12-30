@@ -1,4 +1,3 @@
-from flask import Flask, session
 from flask_restplus import Namespace, Resource, fields
 from flask_jwt_extended import (
     create_access_token, jwt_required, create_refresh_token, 
@@ -7,7 +6,7 @@ from flask_jwt_extended import (
 import datetime
 from flask import request
 from flask_bcrypt import Bcrypt
-from flask_sqlalchemy import SQLAlchemy
+from app import app,db
 
 import sys
 sys.path.append("..")
@@ -19,10 +18,10 @@ USERS = [
     {'id': '1', 'email': 'example@example.com'},
 ]
 
-app = Flask(__name__)
+#app = Flask(__name__)
 bcrypt = Bcrypt(app)
-db = SQLAlchemy(app)
-db.init_app(app)
+#db = SQLAlchemy(app)
+#db.init_app(app)
 
 
 @api.route('/')
