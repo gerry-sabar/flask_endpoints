@@ -12,7 +12,7 @@ app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:root@localhost/flask-restplus'
 
 db = SQLAlchemy(app)
-#db.init_app(app)
+db.init_app(app)
 
 # Setup the Flask-JWT-Extended extension
 app.config['RESTPLUS_MASK_SWAGGER'] = False # remove default X-Fields field in swagger
