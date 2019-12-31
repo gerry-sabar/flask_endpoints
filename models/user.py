@@ -1,13 +1,8 @@
-from flask_migrate import Migrate
 from sqlalchemy import (Text, String, DateTime)
 from datetime import datetime
 import uuid
-from flask_bcrypt import Bcrypt
-from app import app #this doesn't work!
-from app import db #this doesn't work!
-
-bcrypt = Bcrypt(app)
-migrate = Migrate(app, db)
+from app import db
+from app import bcrypt
 
 class UserApi(db.Model):
     __tablename__ = 'user'     

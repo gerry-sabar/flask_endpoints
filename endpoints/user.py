@@ -1,39 +1,38 @@
 from flask_restplus import Namespace, Resource, fields
 from flask_jwt_extended import (
     create_access_token, jwt_required, create_refresh_token, 
-    jwt_refresh_token_required
+    jwt_refresh_token_required, get_jwt_identity, get_raw_jwt,
 )
 import datetime
 from flask import request
 from flask_bcrypt import Bcrypt
 from app import app,db
+from flask_restplus import Resource, fields
 
-import sys
-sys.path.append("..")
 from models.user import UserApi
 
 api = Namespace('users', description='Users related operations')
+user = api.model('UserApi', {
+    'uuid': fields.String(required=True, description='User uuid'),
+    'email': fields.String(required=True, description='User email'),
+    'access_token': fields.String(required=True, description='User access token'),
+    'refresh_token': fields.String(required=True, description='User refresh token'),
+})
 
-USERS = [
-    {'id': '1', 'email': 'example@example.com'},
-]
-
-#app = Flask(__name__)
+blacklist = set()
 bcrypt = Bcrypt(app)
-#db = SQLAlchemy(app)
-#db.init_app(app)
-
 
 @api.route('/')
 class UserList(Resource):
     @jwt_required
     @api.doc('list_users')
-    #@api.marshal_list_with(user)
+    @api.marshal_list_with(user)
     def get(self):
-        '''description goes here...'''
-        return USERS
+        '''Get all users'''
+        users = UserApi.query.all()
+        return users
 
-resource_fields = api.model('User', {
+resource_fields = api.model('Login', {
     'email': fields.String,
     'password': fields.String,
 })
@@ -41,60 +40,82 @@ resource_fields = api.model('User', {
 @api.response(404, 'User not found')
 class Login(Resource):
     @api.expect(resource_fields)
+    @api.marshal_with(user)
     def post(self):
         """
         Obtain user details & token
         """        
         payload = request.get_json()        
-        user = UserApi.query.filter_by(email='joshua72@wilson.com').first()
+        user = UserApi.query.filter_by(email=payload['email']).first()
 
         if not user:
             return { 'status': 'invalid username/password'}
 
-        if bcrypt.check_password_hash(user.password, 'password'):
+        if bcrypt.check_password_hash(user.password, payload['password']):
             expires = datetime.timedelta(minutes=10)
-            access_token = create_access_token(identity=user.email, fresh=True, expires_delta=expires)
-            refresh_token = create_refresh_token(identity=user.email)                
+            access_token = create_access_token(identity=payload['email'], fresh=True, expires_delta=expires)
+            refresh_token = create_refresh_token(identity=payload['email'])
             user.access_token = access_token
             user.refresh_token = refresh_token
-            #userSession = db.session.merge(user)
             db.session.add(user)
-            db.session.commit()            
-            db.session.close()
-            return {
-                'uuid': user.uuid,
-                'email': user.email,
-                'access_token': user.access_token,
-                'refresh_token': user.refresh_token,
-            }
+            db.session.commit()
+
+            return user
         else:
             return { 'status': 'invalid username/password'}
-        #return payload['name']
 
-
-@api.route('/refresh/<refresh_token>')
-@api.param('refresh_token', 'Valid refresh token')
+resource_fields = api.model('Refresh', {
+    'refresh_token': fields.String,
+})
+@api.route('/refresh')
 @api.response(404, 'Invalid token')
-@api.doc(params={'id': 'example of additional optional parameter'})
 class RefreshToken(Resource):
     @jwt_refresh_token_required
-    def get(self, refresh_token):
+    @api.marshal_with(user)
+    def post(self):
+        email = get_jwt_identity()
+
+        if not email:
+            return { 'status': 'invalid refresh token'}
+
+        jti = get_raw_jwt()['jti']
+        blacklist.add(jti)
+
+        user = UserApi.query.filter_by(email=email).first()
         expires = datetime.timedelta(minutes=10)
-        access_token = create_access_token(identity=USERS[0]['email'], fresh=True, expires_delta=expires)
-        refresh_token = create_refresh_token(identity=USERS[0]['email'])                
-        return {'token': access_token, 'refresh_token': refresh_token}, 200        
+        user.access_token = create_access_token(identity=email, fresh=True, expires_delta=expires)
+        user.refresh_token = create_refresh_token(identity=email)
+        return user
 
 
-@api.route('/<id>')
-@api.param('id', 'The user identifier')
+update_fields = api.model('Login', {
+    'email': fields.String,
+})
+@api.route('/<uuid>')
+@api.param('uuid', 'User UUID')
 @api.response(404, 'User not found')
-#@api.doc(security='apikey'), in case you only have some endpoints that are protected.
 class User(Resource):
     @api.doc('get_user')
-    #@api.marshal_with(user)
-    def get(self, id):
-        '''Fetch a user given its identifier'''
-        for user in USERS:
-            if user['id'] == id:
-                return user
-        api.abort(404)
+    @api.marshal_with(user)
+    def get(self, uuid):
+        '''Fetch a user given its UUID'''
+        user = UserApi.query.filter_by(uuid=uuid).first()
+
+        if not user:
+            return { 'status': 'user is not found'}
+
+        return user
+
+    @api.expect(update_fields)
+    @api.marshal_with(user)
+    def put(self, uuid):
+        user = UserApi.query.filter_by(uuid=uuid)
+
+        if not user:
+            return { 'status': 'user is not found'}
+
+        payload = request.get_json()
+        user.email = payload['email']
+        #UserApi.query.filter_by(uuid=uuid).update(payload) # this is not working
+        db.session.add(user)
+        db.session.commit()
