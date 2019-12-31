@@ -26,3 +26,12 @@ app.wsgi_app = ProxyFix(app.wsgi_app)
 api.init_app(app)
 
 app.run(debug=True)
+
+@app.cli.command("seeder")
+def seed():
+    from faker import Faker
+    from models.user import UserApi
+
+    fake = Faker()
+    for x in range(3):
+        UserApi.seed(fake)

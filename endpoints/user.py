@@ -8,7 +8,7 @@ from flask import request
 from flask_bcrypt import Bcrypt
 from app import app,db
 from flask_restplus import Resource, fields
-
+from faker import Faker
 from models.user import UserApi
 
 api = Namespace('users', description='Users related operations')
@@ -109,13 +109,22 @@ class User(Resource):
     @api.expect(update_fields)
     @api.marshal_with(user)
     def put(self, uuid):
-        user = UserApi.query.filter_by(uuid=uuid)
+        user = UserApi.query.filter_by(uuid=uuid).first()
 
         if not user:
             return { 'status': 'user is not found'}
 
         payload = request.get_json()
-        user.email = payload['email']
-        #UserApi.query.filter_by(uuid=uuid).update(payload) # this is not working
-        db.session.add(user)
+        db.session.query(UserApi).filter_by(uuid=uuid).update(payload)
         db.session.commit()
+
+        return user
+
+    def delete(self, uuid):
+        user = UserApi.query.filter_by(uuid=uuid).first()
+
+        if not user:
+            return { 'status': 'user is not found'}
+        db.session.delete(user)
+        db.session.commit()
+        return ('', 204)
