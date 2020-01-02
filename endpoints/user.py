@@ -10,6 +10,7 @@ from app import app,db
 from flask_restplus import Resource, fields
 from faker import Faker
 from models.user import UserApi
+from app import bcrypt, jwt
 
 api = Namespace('users', description='Users related operations')
 user = api.model('UserApi', {
@@ -20,7 +21,11 @@ user = api.model('UserApi', {
 })
 
 blacklist = set()
-bcrypt = Bcrypt(app)
+
+@jwt.token_in_blacklist_loader
+def check_if_token_in_blacklist(decrypted_token):
+    jti = decrypted_token['jti']
+    return jti in blacklist
 
 @api.route('/')
 class UserList(Resource):
@@ -40,7 +45,6 @@ resource_fields = api.model('Login', {
 @api.response(404, 'User not found')
 class Login(Resource):
     @api.expect(resource_fields)
-    @api.marshal_with(user)
     def post(self):
         """
         Obtain user details & token
@@ -48,10 +52,7 @@ class Login(Resource):
         payload = request.get_json()        
         user = UserApi.query.filter_by(email=payload['email']).first()
 
-        if not user:
-            return { 'status': 'invalid username/password'}
-
-        if bcrypt.check_password_hash(user.password, payload['password']):
+        if user is not None and user.verify_password(payload['password']):
             expires = datetime.timedelta(minutes=10)
             access_token = create_access_token(identity=payload['email'], fresh=True, expires_delta=expires)
             refresh_token = create_refresh_token(identity=payload['email'])
@@ -59,16 +60,18 @@ class Login(Resource):
             user.refresh_token = refresh_token
             db.session.add(user)
             db.session.commit()
-
-            return user
+            return {
+                'uuid': user.uuid,
+                'email': user.email,
+                'access_token': access_token,
+                'refresh_token': refresh_token,
+            }
         else:
             return { 'status': 'invalid username/password'}
 
-resource_fields = api.model('Refresh', {
-    'refresh_token': fields.String,
-})
 @api.route('/refresh')
 @api.response(404, 'Invalid token')
+@jwt.token_in_blacklist_loader
 class RefreshToken(Resource):
     @jwt_refresh_token_required
     @api.marshal_with(user)
@@ -78,23 +81,26 @@ class RefreshToken(Resource):
         if not email:
             return { 'status': 'invalid refresh token'}
 
-        jti = get_raw_jwt()['jti']
-        blacklist.add(jti)
-
         user = UserApi.query.filter_by(email=email).first()
         expires = datetime.timedelta(minutes=10)
         user.access_token = create_access_token(identity=email, fresh=True, expires_delta=expires)
         user.refresh_token = create_refresh_token(identity=email)
+
+        #jti = get_raw_jwt()['jti']
+        #blacklist.add(jti)
+
         return user
 
 
-update_fields = api.model('Login', {
+update_fields = api.model('User', {
     'email': fields.String,
+    'password': fields.String,
 })
 @api.route('/<uuid>')
 @api.param('uuid', 'User UUID')
 @api.response(404, 'User not found')
 class User(Resource):
+    @jwt_required
     @api.doc('get_user')
     @api.marshal_with(user)
     def get(self, uuid):

@@ -2,6 +2,7 @@ from flask_restplus import Namespace, Resource, fields
 import requests
 import json
 from flask import request
+from flask_jwt_extended import (jwt_required)
 
 api = Namespace('currencies', description='Currencies related operations')
 
@@ -9,6 +10,7 @@ api = Namespace('currencies', description='Currencies related operations')
 class CurrencyList(Resource):
     @api.doc('list_currencies')
     @api.param('base', 'base exachange currency')
+    @jwt_required
     def get(self):
         if request.args.get('base') is None:
             base = 'USD'

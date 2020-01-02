@@ -11,21 +11,24 @@ app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:root@localhost/flask-restplus'
 db = SQLAlchemy(app)
 db.init_app(app)
-
 bcrypt = Bcrypt(app)
+
+from models import user
+
 migrate = Migrate(app, db)
-from endpoints import api
 
 # Setup the Flask-JWT-Extended extension
 app.config['RESTPLUS_MASK_SWAGGER'] = False # remove default X-Fields field in swagger
 app.config['JWT_SECRET_KEY'] = 'super-secret'  # Change this!
+app.config['JWT_BLACKLIST_ENABLED'] = True
+app.config['JWT_BLACKLIST_TOKEN_CHECKS'] = ['access', 'refresh']
 jwt = JWTManager(app)
 
 app.wsgi_app = ProxyFix(app.wsgi_app)
-
-api.init_app(app)
-
 app.run(debug=True)
+
+from endpoints import api
+api.init_app(app)
 
 @app.cli.command("seeder")
 def seed():
