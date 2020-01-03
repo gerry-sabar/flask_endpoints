@@ -60,7 +60,7 @@ class Login(Resource):
 @api.route('/')
 class UserList(Resource):
     @jwt_required
-    #@api.marshal_list_with(user)
+    @api.marshal_list_with(user)
     def get(self):
         '''Get all users'''
         """
