@@ -5,12 +5,10 @@ from flask_jwt_extended import (
 )
 import datetime
 from flask import request
-from flask_bcrypt import Bcrypt
-from app import app,db
+from app import db
 from flask_restplus import Resource, fields
-from faker import Faker
 from models.user import UserApi
-from app import bcrypt, jwt
+from app import jwt
 
 api = Namespace('users', description='Users related operations')
 user = api.model('UserApi', {
@@ -26,16 +24,6 @@ blacklist = set()
 def check_if_token_in_blacklist(decrypted_token):
     jti = decrypted_token['jti']
     return jti in blacklist
-
-@api.route('/')
-class UserList(Resource):
-    @jwt_required
-    @api.doc('list_users')
-    @api.marshal_list_with(user)
-    def get(self):
-        '''Get all users'''
-        users = UserApi.query.all()
-        return users
 
 resource_fields = api.model('Login', {
     'email': fields.String,
@@ -69,9 +57,23 @@ class Login(Resource):
         else:
             return { 'status': 'invalid username/password'}
 
+@api.route('/')
+class UserList(Resource):
+    @jwt_required
+    #@api.marshal_list_with(user)
+    def get(self):
+        '''Get all users'''
+        """
+        #contoh blacklist & cek blacklist
+        jti = get_raw_jwt()['jti']
+        blacklist.add(jti)
+        return {'test': check_if_token_in_blacklist(get_raw_jwt())}
+        """
+        users = UserApi.query.all()
+        return users
+
 @api.route('/refresh')
 @api.response(404, 'Invalid token')
-@jwt.token_in_blacklist_loader
 class RefreshToken(Resource):
     @jwt_refresh_token_required
     @api.marshal_with(user)

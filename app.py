@@ -1,7 +1,6 @@
 from flask import Flask
 from werkzeug.contrib.fixers import ProxyFix
 from flask_sqlalchemy import SQLAlchemy
-from flask_bcrypt import Bcrypt
 from flask_migrate import Migrate
 from flask_jwt_extended import (
     JWTManager,
@@ -11,7 +10,6 @@ app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:root@localhost/flask-restplus'
 db = SQLAlchemy(app)
 db.init_app(app)
-bcrypt = Bcrypt(app)
 
 from models import user
 

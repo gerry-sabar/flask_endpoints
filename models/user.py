@@ -2,7 +2,6 @@ from sqlalchemy import (Text, String, DateTime)
 from datetime import datetime
 import uuid
 from app import db
-from app import bcrypt
 from werkzeug.security import generate_password_hash, check_password_hash
 
 class UserApi(db.Model):
