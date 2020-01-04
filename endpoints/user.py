@@ -9,6 +9,7 @@ from app import db
 from flask_restplus import Resource, fields
 from models.user import UserApi
 from app import jwt
+from flask import request, jsonify, make_response
 
 api = Namespace('users', description='Users related operations')
 user = api.model('UserApi', {
@@ -25,6 +26,15 @@ def check_if_token_in_blacklist(decrypted_token):
     jti = decrypted_token['jti']
     return jti in blacklist
 
+
+def _corsify_actual_response(payload):
+    #response = jsonify({"order_id": 123, "status": "shipped"})
+    #response = jsonify({'testing': request.form.get('email')})
+    response = jsonify(payload)
+    response.headers.add("Access-Control-Allow-Origin", "*")
+    return response
+
+
 resource_fields = api.model('Login', {
     'email': fields.String,
     'password': fields.String,
@@ -36,24 +46,41 @@ class Login(Resource):
     def post(self):
         """
         Obtain user details & token
-        """        
-        payload = request.get_json()        
+        """
+        """
+        payload = request.get_json()
         user = UserApi.query.filter_by(email=payload['email']).first()
+        """
 
-        if user is not None and user.verify_password(payload['password']):
+        user = UserApi.query.filter_by(email=request.form.get('email')).first()
+
+        #if user is not None and user.verify_password(payload['password']):
+        if user is not None and user.verify_password(request.form.get('password')):
             expires = datetime.timedelta(minutes=10)
-            access_token = create_access_token(identity=payload['email'], fresh=True, expires_delta=expires)
-            refresh_token = create_refresh_token(identity=payload['email'])
+            #access_token = create_access_token(identity=payload['email'], fresh=True, expires_delta=expires)
+            #refresh_token = create_refresh_token(identity=payload['email'])
+            access_token = create_access_token(identity=request.form.get('email'), fresh=True, expires_delta=expires)
+            refresh_token = create_refresh_token(identity=request.form.get('email'))
             user.access_token = access_token
             user.refresh_token = refresh_token
             db.session.add(user)
             db.session.commit()
+            """
             return {
                 'uuid': user.uuid,
                 'email': user.email,
                 'access_token': access_token,
                 'refresh_token': refresh_token,
             }
+            """
+
+            return _corsify_actual_response({
+                'uuid': user.uuid,
+                'email': user.email,
+                'access_token': access_token,
+                'refresh_token': refresh_token,
+            })
+
         else:
             return { 'status': 'invalid username/password'}
 
@@ -136,3 +163,11 @@ class User(Resource):
         db.session.delete(user)
         db.session.commit()
         return ('', 204)
+
+def _build_cors_prelight_response():
+    response = make_response()
+    response.headers.add("Access-Control-Allow-Origin", "*")
+    response.headers.add('Access-Control-Allow-Headers', "*")
+    response.headers.add('Access-Control-Allow-Methods', "*")
+    return response
+

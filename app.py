@@ -11,6 +11,11 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:root@localhost/flask-restp
 db = SQLAlchemy(app)
 db.init_app(app)
 
+from flask_cors import CORS, cross_origin
+cors = CORS(app)
+app.config['CORS_HEADERS'] = 'Content-Type'
+
+
 from models import user
 
 migrate = Migrate(app, db)
