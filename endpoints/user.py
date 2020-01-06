@@ -26,13 +26,6 @@ def check_if_token_in_blacklist(decrypted_token):
     jti = decrypted_token['jti']
     return jti in blacklist
 
-
-def _corsify_actual_response(payload):
-    response = jsonify(payload)
-    response.headers.add("Access-Control-Allow-Origin", "*")
-    return response
-
-
 resource_fields = api.model('Login', {
     'email': fields.String,
     'password': fields.String,
@@ -57,12 +50,12 @@ class Login(Resource):
             db.session.add(user)
             db.session.commit()
 
-            return _corsify_actual_response({
+            return {
                 'uuid': user.uuid,
                 'email': user.email,
                 'access_token': access_token,
                 'refresh_token': refresh_token,
-            })
+            }
 
         else:
             return { 'status': 'invalid username/password'}
@@ -146,11 +139,3 @@ class User(Resource):
         db.session.delete(user)
         db.session.commit()
         return ('', 204)
-
-def _build_cors_prelight_response():
-    response = make_response()
-    response.headers.add("Access-Control-Allow-Origin", "*")
-    response.headers.add('Access-Control-Allow-Headers', "*")
-    response.headers.add('Access-Control-Allow-Methods', "*")
-    return response
-

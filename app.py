@@ -5,9 +5,11 @@ from flask_migrate import Migrate
 from flask_jwt_extended import (
     JWTManager,
 )
+from flask_cors import CORS
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:root@localhost/flask-restplus'
+CORS(app)
 db = SQLAlchemy(app)
 db.init_app(app)
 
