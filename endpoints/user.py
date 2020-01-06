@@ -28,8 +28,6 @@ def check_if_token_in_blacklist(decrypted_token):
 
 
 def _corsify_actual_response(payload):
-    #response = jsonify({"order_id": 123, "status": "shipped"})
-    #response = jsonify({'testing': request.form.get('email')})
     response = jsonify(payload)
     response.headers.add("Access-Control-Allow-Origin", "*")
     return response
@@ -47,32 +45,17 @@ class Login(Resource):
         """
         Obtain user details & token
         """
-        """
         payload = request.get_json()
         user = UserApi.query.filter_by(email=payload['email']).first()
-        """
 
-        user = UserApi.query.filter_by(email=request.form.get('email')).first()
-
-        #if user is not None and user.verify_password(payload['password']):
-        if user is not None and user.verify_password(request.form.get('password')):
+        if user is not None and user.verify_password(payload['password']):
             expires = datetime.timedelta(minutes=10)
-            #access_token = create_access_token(identity=payload['email'], fresh=True, expires_delta=expires)
-            #refresh_token = create_refresh_token(identity=payload['email'])
-            access_token = create_access_token(identity=request.form.get('email'), fresh=True, expires_delta=expires)
-            refresh_token = create_refresh_token(identity=request.form.get('email'))
+            access_token = create_access_token(identity=payload['email'], fresh=True, expires_delta=expires)
+            refresh_token = create_refresh_token(identity=payload['email'])
             user.access_token = access_token
             user.refresh_token = refresh_token
             db.session.add(user)
             db.session.commit()
-            """
-            return {
-                'uuid': user.uuid,
-                'email': user.email,
-                'access_token': access_token,
-                'refresh_token': refresh_token,
-            }
-            """
 
             return _corsify_actual_response({
                 'uuid': user.uuid,
