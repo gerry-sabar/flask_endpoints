@@ -25,6 +25,7 @@ Installation:
 
 VPS Deployment Ubuntu with Nginx:
 
-1. Complete the installation step first.
-2. Reference: https://medium.com/@gerrysabar/deploy-a-flask-application-to-ubuntu-18-04-server-69b414b10881
-3. after intalling all dependencies: gunicorn3 wsgi:application
+1. Complete the installation step first & make sure you aren't in virtual envionrment mode.
+2. Reference: https://medium.com/@gerrysabar/deploy-a-flask-application-to-ubuntu-18-04-server-69b414b10881 follow until install pip3 & then install gunicorn3
+3. inside root project: pip3 install -r requirements.txt 
+4. after intalling all dependencies: gunicorn3 wsgi:application
