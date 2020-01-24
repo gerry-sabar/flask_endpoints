@@ -25,7 +25,6 @@ app.config['JWT_BLACKLIST_TOKEN_CHECKS'] = ['access', 'refresh']
 jwt = JWTManager(app)
 
 app.wsgi_app = ProxyFix(app.wsgi_app)
-app.run(debug=True)
 
 from endpoints import api
 api.init_app(app)
